@@ -112,17 +112,16 @@ func (db *DB) pickForCompaction() []*segment {
 			continue
 		}
 
-		fragmentation := float32(seg.meta.DeletedBytes) / float32(seg.size)
-		if fragmentation < db.opts.compactionMinFragmentation {
+		if 0 < db.opts.compactionMinFragmentation {
 			continue
 		}
 
-		if seg.meta.DeleteRecords > 0 {
-			// Delete records can be discarded only when older segments contain no put records
-			// for the corresponding keys.
-			// All segments older than the segment eligible for compaction have to be compacted.
-			return append(segments[:i+1], picked...)
-		}
+		//if seg.meta.DeleteRecords > 0 {
+		//	// Delete records can be discarded only when older segments contain no put records
+		//	// for the corresponding keys.
+		//	// All segments older than the segment eligible for compaction have to be compacted.
+		//	return append(segments[:i+1], picked...)
+		//}
 
 		picked = append([]*segment{seg}, picked...)
 	}
