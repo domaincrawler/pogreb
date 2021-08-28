@@ -2,11 +2,10 @@
 
 # Pogreb
 [![Docs](https://godoc.org/github.com/domaincrawler/pogreb?status.svg)](https://pkg.go.dev/github.com/domaincrawler/pogreb)
-[![Build Status](https://github.com/domaincrawler/pogreb/actions/workflows/test.yaml/badge.svg?branch=master)](https://github.com/domaincrawler/pogreb/actions)
 [![Go Report Card](https://goreportcard.com/badge/github.com/domaincrawler/pogreb)](https://goreportcard.com/report/github.com/domaincrawler/pogreb)
 [![Codecov](https://codecov.io/gh/akrylysov/pogreb/branch/master/graph/badge.svg)](https://codecov.io/gh/akrylysov/pogreb)
 
-Pogreb is an embedded key-value store for read-heavy workloads written in Go.
+Pogreb is an embedded key-only store for read-heavy workloads written in Go.
 
 ## Key characteristics
 
@@ -49,10 +48,10 @@ func main() {
 
 ### Writing to a database
 
-Use the `DB.Put()` function to insert a new key-value pair:
+Use the `DB.Put()` function to insert a new key:
 
 ```go
-err := db.Put([]byte("testKey"), []byte("testValue"))
+err := db.Put([]byte("testKey"))
 if err != nil {
 	log.Fatal(err)
 }
@@ -60,14 +59,14 @@ if err != nil {
 
 ### Reading from a database
 
-To retrieve the inserted value, use the `DB.Get()` function:
+To retrieve the inserted value, use the `DB.Has()` function:
 
 ```go
-val, err := db.Get([]byte("testKey"))
+val, err := db.Has([]byte("testKey"))
 if err != nil {
 	log.Fatal(err)
 }
-log.Printf("%s", val)
+log.Println(val)
 ```
 
 ### Iterating over items
@@ -77,26 +76,13 @@ To iterate over items, use `ItemIterator` returned by `DB.Items()`:
 ```go
 it := db.Items()
 for {
-    key, val, err := it.Next()
+    key, err := it.Next()
     if err == pogreb.ErrIterationDone {
     	break
     }
     if err != nil { 
         log.Fatal(err)
     }
-    log.Printf("%s %s", key, val)
+    log.Printf("%s", key)
 }
 ```
-
-## Performance
-
-The benchmarking code can be found in the [pogreb-bench](https://github.com/domaincrawler/pogreb-bench) repository.
-
-Results of read performance benchmark of pogreb, goleveldb, bolt and badgerdb
-on DigitalOcean 8 CPUs / 16 GB RAM / 160 GB SSD + Ubuntu 16.04.3 (higher is better):
-
-<p align="center"><img src="https://akrylysov.github.io/pogreb/read-bench.png" width="609"></p>
-
-## Internals
-
-[Design document](/docs/design.md).
