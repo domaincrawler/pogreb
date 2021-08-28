@@ -47,12 +47,10 @@ The record layout:
 
 ```
 Record
-+---------------+------------------+------------------+-...-+--...--+----------+
-| Key Size (2B) | Record Type (1b) | Value Size (31b) | Key | Value | CRC (4B) |
-+---------------+------------------+------------------+-...-+--...--+----------+
++---------------+-...-+----------+
+| Key Size (2B) | Key | CRC (4B) |
++---------------+-...-+----------+
 ```
-
-The Record Type field is either `Put` (0) or `Delete` (1).
 
 ## Hash table index
 
@@ -83,13 +81,13 @@ Bucket
 
 ### Slot
 
-A slot contains the hash, the size of the key, the value size and a 32-bit offset of the key-value pair in the WAL.
+A slot contains the hash, the size of the key size and a 32-bit offset of the key-value pair in the WAL.
 
 ```
 Slot
-+-----------+-----------------+---------------+-----------------+-------------+
-| Hash (4B) | Segment ID (2B) | Key Size (2B) | Value Size (4B) | Offset (4B) |
-+-----------+-----------------+---------------+-----------------+-------------+
++-----------+-----------------+---------------+-------------+
+| Hash (4B) | Segment ID (2B) | Key Size (2B) | Offset (4B) |
++-----------+-----------------+---------------+-------------+
 ```
 
 ## Linear hashing
@@ -162,11 +160,6 @@ the split bucket *S*:
 4. Divide items from the old split bucket between the newly allocated bucket and the old split bucket by
 recalculating the positions of the keys in the hash table.
 5. Increment the number of buckets *N*.
-
-### Removal
-
-The removal operation lookups a bucket by key, removes a slot from the bucket, overwrites the bucket in the index
-and then appends a new "delete" record to the WAL.
 
 ## Compaction
 
