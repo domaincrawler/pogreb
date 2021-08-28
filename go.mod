@@ -1,3 +1,3 @@
-module github.com/akrylysov/pogreb
+module github.com/domaincrawler/pogreb
 
-go 1.12
+go 1.17
