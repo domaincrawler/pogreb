@@ -80,7 +80,7 @@ func newSegmentIterator(f *segment) (*segmentIterator, error) {
 		f:      f,
 		offset: headerSize,
 		r:      bufio.NewReader(f),
-		buf:    make([]byte, 6),
+		buf:    make([]byte, 2),
 	}, nil
 }
 
