@@ -3,7 +3,7 @@ package pogreb
 import (
 	"testing"
 
-	"github.com/akrylysov/pogreb/internal/assert"
+	"github.com/domaincrawler/pogreb/internal/assert"
 )
 
 func TestIteratorEmpty(t *testing.T) {

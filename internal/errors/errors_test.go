@@ -3,7 +3,7 @@ package errors
 import (
 	"testing"
 
-	"github.com/akrylysov/pogreb/internal/assert"
+	"github.com/domaincrawler/pogreb/internal/assert"
 )
 
 func TestWrap(t *testing.T) {

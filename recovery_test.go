@@ -4,7 +4,7 @@ package pogreb
 //	"path/filepath"
 //	"testing"
 //
-//	"github.com/akrylysov/pogreb/internal/assert"
+//	"github.com/domaincrawler/pogreb/internal/assert"
 //)
 //
 //func TestRecovery(t *testing.T) {

@@ -1,7 +1,7 @@
 package pogreb
 
 import (
-	"github.com/akrylysov/pogreb/internal/errors"
+	"github.com/domaincrawler/pogreb/internal/errors"
 )
 
 var (

@@ -3,7 +3,7 @@ package pogreb
 import (
 	"os"
 
-	"github.com/akrylysov/pogreb/fs"
+	"github.com/domaincrawler/pogreb/fs"
 )
 
 const (

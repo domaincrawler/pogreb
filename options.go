@@ -4,7 +4,7 @@ import (
 	"math"
 	"time"
 
-	"github.com/akrylysov/pogreb/fs"
+	"github.com/domaincrawler/pogreb/fs"
 )
 
 // Options holds the optional DB parameters.

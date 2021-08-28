@@ -4,7 +4,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/akrylysov/pogreb/fs"
+	"github.com/domaincrawler/pogreb/fs"
 )
 
 // file is a database file.
