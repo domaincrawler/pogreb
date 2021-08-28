@@ -17,9 +17,6 @@ const (
 	// MaxKeyLength is the maximum size of a key in bytes.
 	MaxKeyLength = math.MaxUint16
 
-	// MaxValueLength is the maximum size of a value in bytes.
-	MaxValueLength = 512 << 20 // 512 MiB
-
 	// MaxKeys is the maximum numbers of keys in the DB.
 	MaxKeys = math.MaxUint32
 
@@ -27,7 +24,7 @@ const (
 	dbMetaName = "db" + metaExt
 )
 
-// DB represents the key-value storage.
+// DB represents the key-only storage.
 // All DB methods are safe for concurrent use by multiple goroutines.
 type DB struct {
 	mu                sync.RWMutex // Allows multiple database readers or a single writer.
@@ -194,34 +191,6 @@ func (db *DB) startBackgroundWorker() {
 	}()
 }
 
-// Get returns the value for the given key stored in the DB or nil if the key doesn't exist.
-func (db *DB) Get(key []byte) ([]byte, error) {
-	h := db.hash(key)
-	db.metrics.Gets.Add(1)
-	db.mu.RLock()
-	defer db.mu.RUnlock()
-	var retValue []byte
-	err := db.index.get(h, func(sl slot) (bool, error) {
-		if uint16(len(key)) != sl.keySize {
-			return false, nil
-		}
-		slKey, value, err := db.datalog.readKeyValue(sl)
-		if err != nil {
-			return true, err
-		}
-		if bytes.Equal(key, slKey) {
-			retValue = cloneBytes(value)
-			return true, nil
-		}
-		db.metrics.HashCollisions.Add(1)
-		return false, nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	return retValue, nil
-}
-
 // Has returns true if the DB contains the given key.
 func (db *DB) Has(key []byte) (bool, error) {
 	h := db.hash(key)
@@ -258,51 +227,21 @@ func (db *DB) put(sl slot, key []byte) error {
 			return true, err
 		}
 		if bytes.Equal(key, slKey) {
-			db.datalog.trackDel(cursl) // Overwriting existing key.
 			return true, nil
 		}
 		return false, nil
 	})
 }
 
-// Put sets the value for the given key. It updates the value for the existing key.
-func (db *DB) Put(key []byte, value []byte) error {
+func (db *DB) HasOrPut(key, value []byte) (bool, error) {
 	if len(key) > MaxKeyLength {
-		return errKeyTooLarge
+		return false, errKeyTooLarge
 	}
-	if len(value) > MaxValueLength {
-		return errValueTooLarge
-	}
+	found := false
 	h := db.hash(key)
-	db.metrics.Puts.Add(1)
 	db.mu.Lock()
 	defer db.mu.Unlock()
-
-	segID, offset, err := db.datalog.put(key, value)
-	if err != nil {
-		return err
-	}
-
-	sl := slot{
-		hash:      h,
-		segmentID: segID,
-		keySize:   uint16(len(key)),
-		valueSize: uint32(len(value)),
-		offset:    offset,
-	}
-
-	if err := db.put(sl, key); err != nil {
-		return err
-	}
-
-	if db.syncWrites {
-		return db.sync()
-	}
-	return nil
-}
-
-func (db *DB) del(h uint32, key []byte, writeWAL bool) error {
-	err := db.index.delete(h, func(sl slot) (b bool, e error) {
+	err := db.index.get(h, func(sl slot) (bool, error) {
 		if uint16(len(key)) != sl.keySize {
 			return false, nil
 		}
@@ -311,27 +250,63 @@ func (db *DB) del(h uint32, key []byte, writeWAL bool) error {
 			return true, err
 		}
 		if bytes.Equal(key, slKey) {
-			db.datalog.trackDel(sl)
-			var err error
-			if writeWAL {
-				err = db.datalog.del(key)
-			}
-			return true, err
+			found = true
+			return true, nil
 		}
 		return false, nil
 	})
-	return err
+	if err != nil {
+		return false, err
+	}
+	if !found {
+		segID, offset, err := db.datalog.put(key)
+		if err != nil {
+			return false, err
+		}
+		sl := slot{
+			hash:      h,
+			segmentID: segID,
+			keySize:   uint16(len(key)),
+			offset:    offset,
+		}
+
+		if err := db.put(sl, key); err != nil {
+			return false, err
+		}
+
+		if db.syncWrites {
+			return found, db.sync()
+		}
+	}
+	return found, nil
 }
 
-// Delete deletes the given key from the DB.
-func (db *DB) Delete(key []byte) error {
+// Put sets the value for the given key. It updates the value for the existing key.
+func (db *DB) Put(key []byte) error {
+	if len(key) > MaxKeyLength {
+		return errKeyTooLarge
+	}
 	h := db.hash(key)
-	db.metrics.Dels.Add(1)
+	db.metrics.Puts.Add(1)
 	db.mu.Lock()
 	defer db.mu.Unlock()
-	if err := db.del(h, key, true); err != nil {
+
+	segID, offset, err := db.datalog.put(key)
+	if err != nil {
 		return err
 	}
+
+	sl := slot{
+		hash:      h,
+		segmentID: segID,
+		keySize:   uint16(len(key)),
+		offset:    offset,
+	}
+
+	if err := db.put(sl, key); err != nil {
+		return err
+	}
+
 	if db.syncWrites {
 		return db.sync()
 	}

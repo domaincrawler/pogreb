@@ -125,25 +125,16 @@ func (db *DB) recover() error {
 
 		h := db.hash(rec.key)
 		meta := db.datalog.segments[rec.segmentID].meta
-		if rec.rtype == recordTypePut {
-			sl := slot{
-				hash:      h,
-				segmentID: rec.segmentID,
-				keySize:   uint16(len(rec.key)),
-				valueSize: uint32(len(rec.value)),
-				offset:    rec.offset,
-			}
-			if err := db.put(sl, rec.key); err != nil {
-				return err
-			}
-			meta.PutRecords++
-		} else {
-			if err := db.del(h, rec.key, false); err != nil {
-				return err
-			}
-			meta.DeleteRecords++
-			meta.DeletedBytes += uint32(len(rec.data))
+		sl := slot{
+			hash:      h,
+			segmentID: rec.segmentID,
+			keySize:   uint16(len(rec.key)),
+			offset:    rec.offset,
 		}
+		if err := db.put(sl, rec.key); err != nil {
+			return err
+		}
+		meta.PutRecords++
 	}
 
 	// Mark all segments except the newest as full.

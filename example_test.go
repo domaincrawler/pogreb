@@ -15,27 +15,27 @@ func Example() {
 	defer db.Close()
 
 	// Insert a new key-value pair.
-	if err := db.Put([]byte("testKey"), []byte("testValue")); err != nil {
+	if err := db.Put([]byte("testKey")); err != nil {
 		log.Fatal(err)
 	}
 
 	// Retrieve the inserted value.
-	val, err := db.Get([]byte("testKey"))
+	val, err := db.Has([]byte("testKey"))
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Printf("%s", val)
+	log.Println(val)
 
 	// Iterate over items.
 	it := db.Items()
 	for {
-		key, val, err := it.Next()
+		key, err := it.Next()
 		if err == pogreb.ErrIterationDone {
 			break
 		}
 		if err != nil {
 			log.Fatal(err)
 		}
-		log.Printf("%s %s", key, val)
+		log.Printf("%s", key)
 	}
 }

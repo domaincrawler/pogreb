@@ -163,41 +163,41 @@ func (dl *datalog) removeSegment(seg *segment) error {
 	return nil
 }
 
-func (dl *datalog) readKeyValue(sl slot) ([]byte, []byte, error) {
-	off := int64(sl.offset) + 6 // Skip key size and value size.
-	seg := dl.segments[sl.segmentID]
-	keyValue, err := seg.Slice(off, off+int64(sl.kvSize()))
-	if err != nil {
-		return nil, nil, err
-	}
-	return keyValue[:sl.keySize], keyValue[sl.keySize:], nil
-}
+//func (dl *datalog) readKeyValue(sl slot) ([]byte, []byte, error) {
+//	off := int64(sl.offset) + 6 // Skip key size and value size.
+//	seg := dl.segments[sl.segmentID]
+//	keyValue, err := seg.Slice(off, off+int64(sl.kvSize()))
+//	if err != nil {
+//		return nil, nil, err
+//	}
+//	return keyValue[:sl.keySize], keyValue[sl.keySize:], nil
+//}
 
 func (dl *datalog) readKey(sl slot) ([]byte, error) {
-	off := int64(sl.offset) + 6
+	off := int64(sl.offset) + 2
 	seg := dl.segments[sl.segmentID]
 	return seg.Slice(off, off+int64(sl.keySize))
 }
 
 // trackDel updates segment's metadata for deleted or overwritten items.
-func (dl *datalog) trackDel(sl slot) {
-	meta := dl.segments[sl.segmentID].meta
-	meta.DeletedKeys++
-	meta.DeletedBytes += encodedRecordSize(sl.kvSize())
-}
+//func (dl *datalog) trackDel(sl slot) {
+//	meta := dl.segments[sl.segmentID].meta
+//	meta.DeletedKeys++
+//	meta.DeletedBytes += encodedRecordSize(sl.kvSize())
+//}
 
-func (dl *datalog) del(key []byte) error {
-	rec := encodeDeleteRecord(key)
-	_, _, err := dl.writeRecord(rec, recordTypeDelete)
-	if err != nil {
-		return err
-	}
-	// Compaction removes delete records, increment DeletedBytes.
-	dl.curSeg.meta.DeletedBytes += uint32(len(rec))
-	return nil
-}
+//func (dl *datalog) del(key []byte) error {
+//	rec := encodeDeleteRecord(key)
+//	_, _, err := dl.writeRecord(rec, recordTypeDelete)
+//	if err != nil {
+//		return err
+//	}
+//	// Compaction removes delete records, increment DeletedBytes.
+//	dl.curSeg.meta.DeletedBytes += uint32(len(rec))
+//	return nil
+//}
 
-func (dl *datalog) writeRecord(data []byte, rt recordType) (uint16, uint32, error) {
+func (dl *datalog) writeRecord(data []byte) (uint16, uint32, error) {
 	if dl.curSeg.meta.Full || dl.curSeg.size+int64(len(data)) > int64(dl.opts.maxSegmentSize) {
 		// Current segment is full, create a new one.
 		dl.curSeg.meta.Full = true
@@ -209,17 +209,12 @@ func (dl *datalog) writeRecord(data []byte, rt recordType) (uint16, uint32, erro
 	if err != nil {
 		return 0, 0, err
 	}
-	switch rt {
-	case recordTypePut:
-		dl.curSeg.meta.PutRecords++
-	case recordTypeDelete:
-		dl.curSeg.meta.DeleteRecords++
-	}
+	dl.curSeg.meta.PutRecords++
 	return dl.curSeg.id, uint32(off), nil
 }
 
-func (dl *datalog) put(key []byte, value []byte) (uint16, uint32, error) {
-	return dl.writeRecord(encodePutRecord(key, value), recordTypePut)
+func (dl *datalog) put(key []byte) (uint16, uint32, error) {
+	return dl.writeRecord(encodePutRecord(key))
 }
 
 func (dl *datalog) sync() error {

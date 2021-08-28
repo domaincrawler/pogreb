@@ -226,40 +226,40 @@ func (idx *index) put(newSlot slot, matchKey matchKeyFunc) error {
 	return nil
 }
 
-func (idx *index) delete(hash uint32, matchKey matchKeyFunc) error {
-	it := idx.newBucketIterator(idx.bucketIndex(hash))
-	for {
-		b, err := it.next()
-		if err == ErrIterationDone {
-			return nil
-		}
-		if err != nil {
-			return err
-		}
-		for i := 0; i < slotsPerBucket; i++ {
-			sl := b.slots[i]
-			if sl.offset == 0 {
-				break
-			}
-			if hash != sl.hash {
-				continue
-			}
-			match, err := matchKey(sl)
-			if err != nil {
-				return err
-			}
-			if !match {
-				continue
-			}
-			b.del(i)
-			if err := b.write(); err != nil {
-				return err
-			}
-			idx.numKeys--
-			return nil
-		}
-	}
-}
+//func (idx *index) delete(hash uint32, matchKey matchKeyFunc) error {
+//	it := idx.newBucketIterator(idx.bucketIndex(hash))
+//	for {
+//		b, err := it.next()
+//		if err == ErrIterationDone {
+//			return nil
+//		}
+//		if err != nil {
+//			return err
+//		}
+//		for i := 0; i < slotsPerBucket; i++ {
+//			sl := b.slots[i]
+//			if sl.offset == 0 {
+//				break
+//			}
+//			if hash != sl.hash {
+//				continue
+//			}
+//			match, err := matchKey(sl)
+//			if err != nil {
+//				return err
+//			}
+//			if !match {
+//				continue
+//			}
+//			b.del(i)
+//			if err := b.write(); err != nil {
+//				return err
+//			}
+//			idx.numKeys--
+//			return nil
+//		}
+//	}
+//}
 
 func (idx *index) createOverflowBucket() (*bucketHandle, error) {
 	var off int64

@@ -8,12 +8,7 @@ import (
 	"io"
 )
 
-type recordType int
-
 const (
-	recordTypePut recordType = iota
-	recordTypeDelete
-
 	segmentExt = ".psg"
 )
 
@@ -44,47 +39,29 @@ func segmentMetaName(id uint16, sequenceID uint64) string {
 }
 
 // Binary representation of a segment record:
-// +---------------+------------------+------------------+-...-+--...--+----------+
-// | Key Size (2B) | Record Type (1b) | Value Size (31b) | Key | Value | CRC (4B) |
-// +---------------+------------------+------------------+-...-+--...--+----------+
+// +---------------+------------------+------------------+
+// | Key Size (2B) | Key              |         CRC (4B) |
+// +---------------+------------------+------------------+
 type record struct {
-	rtype     recordType
 	segmentID uint16
 	offset    uint32
 	data      []byte
 	key       []byte
-	value     []byte
 }
 
 func encodedRecordSize(kvSize uint32) uint32 {
-	// key size, value size, key, value, crc32
-	return 2 + 4 + kvSize + 4
+	// key size, key, crc32
+	return 2 + kvSize + 4
 }
 
-func encodeRecord(key []byte, value []byte, rt recordType) []byte {
-	size := encodedRecordSize(uint32(len(key) + len(value)))
+func encodePutRecord(key []byte) []byte {
+	size := encodedRecordSize(uint32(len(key)))
 	data := make([]byte, size)
 	binary.LittleEndian.PutUint16(data[:2], uint16(len(key)))
-
-	valLen := uint32(len(value))
-	if rt == recordTypeDelete { // Set delete bit.
-		valLen |= 1 << 31
-	}
-	binary.LittleEndian.PutUint32(data[2:], valLen)
-
-	copy(data[6:], key)
-	copy(data[6+len(key):], value)
-	checksum := crc32.ChecksumIEEE(data[:6+len(key)+len(value)])
+	copy(data[2:], key)
+	checksum := crc32.ChecksumIEEE(data[:2+len(key)])
 	binary.LittleEndian.PutUint32(data[size-4:size], checksum)
 	return data
-}
-
-func encodePutRecord(key []byte, value []byte) []byte {
-	return encodeRecord(key, value, recordTypePut)
-}
-
-func encodeDeleteRecord(key []byte) []byte {
-	return encodeRecord(key, nil, recordTypeDelete)
 }
 
 // segmentIterator iterates over segment records.
@@ -120,19 +97,17 @@ func (it *segmentIterator) next() (record, error) {
 	// Decode key size.
 	keySize := uint32(binary.LittleEndian.Uint16(kvSizeBuf[:2]))
 
-	// Decode value size and record type.
-	rt := recordTypePut
-	valueSize := binary.LittleEndian.Uint32(kvSizeBuf[2:])
-	if valueSize&(1<<31) != 0 {
-		rt = recordTypeDelete
-		valueSize &^= 1 << 31
-	}
+	//// Decode value size and record type.
+	//valueSize := binary.LittleEndian.Uint32(kvSizeBuf[2:])
+	//if valueSize&(1<<31) != 0 {
+	//	valueSize &^= 1 << 31
+	//}
 
 	// Read key, value and checksum.
-	recordSize := encodedRecordSize(keySize + valueSize)
+	recordSize := encodedRecordSize(keySize)
 	data := make([]byte, recordSize)
 	copy(data, kvSizeBuf)
-	if _, err := io.ReadFull(it.r, data[6:]); err != nil {
+	if _, err := io.ReadFull(it.r, data[2:]); err != nil {
 		return record{}, err
 	}
 
@@ -145,12 +120,10 @@ func (it *segmentIterator) next() (record, error) {
 	offset := it.offset
 	it.offset += recordSize
 	rec := record{
-		rtype:     rt,
 		segmentID: it.f.id,
 		offset:    offset,
 		data:      data,
-		key:       data[6 : 6+keySize],
-		value:     data[6+keySize : 6+keySize+valueSize],
+		key:       data[2 : 2+keySize],
 	}
 	return rec, nil
 }

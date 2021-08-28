@@ -35,7 +35,7 @@ func (db *DB) promoteRecord(rec record) (bool, error) {
 			}
 
 			// The record is in the index, write it to the current segment.
-			segmentID, offset, err := db.datalog.writeRecord(rec.data, rec.rtype) // TODO: batch writes
+			segmentID, offset, err := db.datalog.writeRecord(rec.data) // TODO: batch writes
 			if err != nil {
 				return false, err
 			}
@@ -75,11 +75,11 @@ func (db *DB) compact(sourceSeg *segment) (CompactionResult, error) {
 			if err != nil {
 				return err
 			}
-			if rec.rtype == recordTypeDelete {
-				cr.ReclaimedRecords++
-				cr.ReclaimedBytes += len(rec.data)
-				return nil
-			}
+			//if rec.rtype == recordTypeDelete {
+			//	cr.ReclaimedRecords++
+			//	cr.ReclaimedBytes += len(rec.data)
+			//	return nil
+			//}
 			reclaimed, err := db.promoteRecord(rec)
 			if reclaimed {
 				cr.ReclaimedRecords++

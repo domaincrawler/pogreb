@@ -10,7 +10,6 @@ var ErrIterationDone = errors.New("no more items in iterator")
 
 type item struct {
 	key   []byte
-	value []byte
 }
 
 // ItemIterator is an iterator over DB key-value pairs. It iterates the items in an unspecified order.
@@ -38,19 +37,18 @@ func (it *ItemIterator) fetchItems(nextBucketIdx uint32) error {
 				// No more items in the bucket.
 				break
 			}
-			key, value, err := it.db.datalog.readKeyValue(sl)
+			key, err := it.db.datalog.readKey(sl)
 			if err != nil {
 				return err
 			}
 			key = cloneBytes(key)
-			value = cloneBytes(value)
-			it.queue = append(it.queue, item{key: key, value: value})
+			it.queue = append(it.queue, item{key: key})
 		}
 	}
 }
 
 // Next returns the next key-value pair if available, otherwise it returns ErrIterationDone error.
-func (it *ItemIterator) Next() ([]byte, []byte, error) {
+func (it *ItemIterator) Next() ([]byte, error) {
 	it.mu.Lock()
 	defer it.mu.Unlock()
 
@@ -60,7 +58,7 @@ func (it *ItemIterator) Next() ([]byte, []byte, error) {
 	// The iterator queue is empty and we have more buckets to check.
 	for len(it.queue) == 0 && it.nextBucketIdx < it.db.index.numBuckets {
 		if err := it.fetchItems(it.nextBucketIdx); err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		it.nextBucketIdx++
 	}
@@ -68,8 +66,8 @@ func (it *ItemIterator) Next() ([]byte, []byte, error) {
 	if len(it.queue) > 0 {
 		item := it.queue[0]
 		it.queue = it.queue[1:]
-		return item.key, item.value, nil
+		return item.key, nil
 	}
 
-	return nil, nil, ErrIterationDone
+	return nil, ErrIterationDone
 }
