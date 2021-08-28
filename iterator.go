@@ -9,7 +9,7 @@ import (
 var ErrIterationDone = errors.New("no more items in iterator")
 
 type item struct {
-	key   []byte
+	key []byte
 }
 
 // ItemIterator is an iterator over DB key-value pairs. It iterates the items in an unspecified order.
