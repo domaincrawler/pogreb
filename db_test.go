@@ -11,8 +11,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/akrylysov/pogreb/fs"
-	"github.com/akrylysov/pogreb/internal/assert"
+	"github.com/domaincrawler/pogreb/fs"
+	"github.com/domaincrawler/pogreb/internal/assert"
 )
 
 const (

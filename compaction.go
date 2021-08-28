@@ -3,7 +3,7 @@ package pogreb
 import (
 	"sync/atomic"
 
-	"github.com/akrylysov/pogreb/internal/errors"
+	"github.com/domaincrawler/pogreb/internal/errors"
 )
 
 // promoteRecord writes the record to the current segment if the index still points to the record.

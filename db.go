@@ -8,9 +8,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/akrylysov/pogreb/fs"
-	"github.com/akrylysov/pogreb/internal/errors"
-	"github.com/akrylysov/pogreb/internal/hash"
+	"github.com/domaincrawler/pogreb/fs"
+	"github.com/domaincrawler/pogreb/internal/errors"
+	"github.com/domaincrawler/pogreb/internal/hash"
 )
 
 const (
