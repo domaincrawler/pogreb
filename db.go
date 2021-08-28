@@ -233,7 +233,7 @@ func (db *DB) put(sl slot, key []byte) error {
 	})
 }
 
-func (db *DB) HasOrPut(key, value []byte) (bool, error) {
+func (db *DB) HasOrPut(key []byte) (bool, error) {
 	if len(key) > MaxKeyLength {
 		return false, errKeyTooLarge
 	}
